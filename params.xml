@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<opencv_storage>
+<videoStreamRtsp>rtsp://admin:123456789..@192.168.1.64/media/video1</videoStreamRtsp>
+<useUSBCamera>1</useUSBCamera>
+<USBPort>0</USBPort>
+<simTheta>0.5</simTheta>
+<useGpuRecognize>1</useGpuRecognize>
+<detectTheta>0.7</detectTheta>
+</opencv_storage>
