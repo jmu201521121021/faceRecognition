@@ -30,11 +30,17 @@ public:
 
 	//插入：
 	void insert(NDArray featureMap, struct InformationParam &infoParam);
+	// 插入活动表
+	bool insertActivity(const QString activity_name);
 	//查询:
 	vector<InformationParam> query();
 	
 	void close();
-
+	// 活动表
+	vector<QString> selectActivity();
+	// 插入考勤记录表
+	bool insertRecord(int recordId,QString no, int id);
+	int getRecordId();
 private:
 	//扩容
 	void expand();

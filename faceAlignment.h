@@ -4,6 +4,7 @@
 #include "dbg.h"
 #include "FaceLandmarkAPI.h"
 #include "alignment\PointDetector2.h"
+#include "common.h"
 class FaceLandmarkAPI;
 
 class FaceAlignment
@@ -18,6 +19,8 @@ public:
 	void alignFace(cv::Mat landmarkFace, std::vector<cv::Point2f>landmarkPoints,cv::Mat &alignFaceImg);
 	// 转换坐标系
 	void transformImgAndPoint(cv::Mat srcImg, bbox_t bbox,int imageSize,cv::Mat &detectImg, std::vector<cv::Point2f> &landkmarkPoint);
+	// 返回人脸区域
+	cv::Mat rectImage(cv::Mat img, bbox_t bbox);
 private:
 	// dlib 
 	FaceLandmarkAPI * mFaceLandmarkAPI = NULL;

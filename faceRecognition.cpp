@@ -73,7 +73,9 @@ float FaceRecognition::caculateSim(std::string feature_src, std::string feature_
 	}
 	L1 = sqrt(L1);
 	L2 = sqrt(L2);
-	sim /= (L1 * L2);
+	float Norm = L1 * L2 + 1e-7;
+	sim /= Norm;
+
 
 	return sim;
 }

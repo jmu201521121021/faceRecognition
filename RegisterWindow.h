@@ -5,6 +5,8 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QGridLayout>
+#include <QMainWindow>
 
 #include "faceDetector.h"
 #include "faceRecognition.h"
@@ -12,7 +14,7 @@
 
 #include "sqlSplite.h"
 
-class RegisterWindow : public QWidget
+class RegisterWindow :public QMainWindow
 {
 	Q_OBJECT
 
@@ -26,18 +28,24 @@ public:
 
 	//释放界面
 	void cleanView();
-	//
-	void paintEvent(QPaintEvent *e);
+	// 释放模型
+	void releaseModel();
+	
+	void saveMessage(const QString imagePath="");
 
 	//初始化摄像头
 	void initCapture();
-
+	// predict()
+	void predictFace(cv::Mat &detectImg);
 
 private slots:
 	void shotButtonSlot();
 	void confirmButtonSlot();
 	void quitButtonSlot();
+	void upFaceButtonSlot();
+	void upBatchFaceButtonSlot();
 	void quitSlot();
+	void paintEvent(QPaintEvent *e);
 private:
 	/*   检测器 & 摄像头 & 识别器  都是从MainWindow中传递过来*/
 	/*  检测器   */
@@ -71,11 +79,19 @@ private:
 	QLabel *classLabel;
 	QLineEdit *classEdit;
 
-	QPushButton *shotButton;//拍摄按钮
-	QPushButton *confirmButton;//确认按钮
-	QPushButton *quitButton;//退出按钮
-
+	QPushButton *shotButton;    // 拍摄按钮
+	QPushButton *confirmButton; // 确认按钮
+	QPushButton *upFaceButton;   // 上传个人照片
+	QPushButton *upBatchFaceButton; // 批量上传照片
+	QPushButton *quitButton;    // 退出按钮
+	/*面板*/
+	QWidget *centralWidget;
+	QWidget *subShowWidget;
+	QGridLayout *mainGridLayout;
+	QGridLayout *rightTopLayout;
 	bool checkInformation();
+	int registerType = -1;
+
 };
 
 

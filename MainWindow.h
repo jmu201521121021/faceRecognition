@@ -18,7 +18,7 @@
 #include <vector>
 #include <string>
 #include <qDebug.h>
-
+#include <QCombobox>
 class MainWindow : public QMainWindow
 {
 	Q_OBJECT
@@ -155,8 +155,19 @@ public:
 		}
 		return index;
 	}
-
-
+	
+	inline void setActivityId(int activityId) {
+		this->activityId = activityId;
+	}
+	inline int getActivityId() {
+		return this->activityId;
+	}
+	inline void setRecordId(int recordId) {
+		this->recordId = recordId;
+	}
+	inline int getRecordId() {
+		return this->recordId;
+	}
 private slots:
 
 	/*   槽 - 模式选择   */
@@ -171,12 +182,15 @@ private slots:
 	void detAliRecFunctionSlot();  //检测 + 对齐 + 识别功能
 
 	void paintEvent(QPaintEvent *e);
-
+	void addActSlot();      // 添加活动事件
+	void startRecordSlot(); 
+	void selectBoxIndex(int index);
 private:
 	
 
 	QWidget *centralWidget;
 	QWidget *subShowWidget;
+	QWidget *rightDownWidget;
 
 	/*  菜单                    */
 	QMenuBar *bar;
@@ -208,6 +222,7 @@ private:
 	/*   布局            */
 	QGridLayout *mainGridLayout;
 	QGridLayout *rightTopLayout;
+	QGridLayout *rightDownLayout;
 
 	/*   布局中的控件    */
 	QLabel *mainShow;
@@ -230,6 +245,10 @@ private:
 	QLabel *simiInfo4;
 
 	QLabel *informationShow;
+	// 添加活动
+	QPushButton *addActButton;      // 添加活动名称
+	QPushButton *startRecordButton; // 开始考勤按钮
+	QComboBox *selectBox;           // 活动选择
 
 	/*   标志位    */
 	//mode = 1   ->   picture;
@@ -280,7 +299,15 @@ private:
 
 	// 数据库所有人信息
 	std::vector<InformationParam> dataSetInfomations;
-	//
+	/*<考勤变量>*/
+	// 选择活动名称
+	int activityId;
+	//是否点击考勤
+	bool isStartRecord = false;
+	// 已记录的数据
+	std::vector<QString> recordNames;
+	// 考勤ID
+	int recordId = -1;
 };
 
 #endif // MAINWINDOW_H

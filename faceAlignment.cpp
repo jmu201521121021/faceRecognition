@@ -115,10 +115,18 @@ void  FaceAlignment::transformImgAndPoint(cv::Mat srcImg, bbox_t bbox,int imageS
 	// ²Ã¼ô
 	srcImg(rect).copyTo(detectImg);
 	cv::resize(detectImg, detectImg, cv::Size(imageSize,imageSize), (0, 0), (0, 0), cv::INTER_LINEAR);
-	float scale_x = imageSize / bbox.w;
-	float scale_y = imageSize / bbox.h;
+	float scale_x = imageSize / (bbox.w + 1e-7);
+	float scale_y = imageSize / (bbox.h + 1e-7);
 	for (int i = 0; i < landkmarkPoint.size(); i++) {
 		landkmarkPoint[i].x *= scale_x;
 		landkmarkPoint[i].y *= scale_y;
 	}
+}
+cv::Mat FaceAlignment::rectImage(cv::Mat img, bbox_t bbox) {
+	int minL = MIN(bbox.w, bbox.h);
+	if (minL < 112) {
+
+	}
+	cv::Mat recImg;
+	return recImg;
 }

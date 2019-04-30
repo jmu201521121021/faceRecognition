@@ -4,6 +4,6 @@
 <useUSBCamera>1</useUSBCamera>
 <USBPort>0</USBPort>
 <simTheta>0.5</simTheta>
-<useGpuRecognize>1</useGpuRecognize>
+<useGpuRecognize>0</useGpuRecognize>
 <detectTheta>0.7</detectTheta>
 </opencv_storage>

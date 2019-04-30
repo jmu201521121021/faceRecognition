@@ -6,7 +6,6 @@
 
 #define SQ(str) str2qstr(str)
 #define QS(qstr) std::string(qstr2str(QString(qstr)))
-
 // 解决中文乱码的问题
 inline QString str2qstr(const std::string& str)
 {

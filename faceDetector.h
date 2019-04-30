@@ -5,6 +5,7 @@
 #define FACEDETECTOR_H
 
 #include "yolo.h"
+#include "alignment\FaceDetector2.h"
 #include "dbg.h"
 #include <vector>
 #include <string>
@@ -22,7 +23,7 @@ public:
 private:
 	/*  ¼ì²âÆ÷   */
 	Detector *detector;
-
+	seeta::FaceDetector2 *FD;
 	/*  ³õÊ¼»¯¼ì²âÆ÷  */
 	void initDetector();
 
@@ -35,6 +36,7 @@ private:
 	std::string cfg_file = "../cfg/yolov3-spp-focal_loss-test.cfg";
 	std::string weights_file = "../model/yolov3-spp-focal_loss_12000.weights";
 	float theta = 0.7;
+	int detectType = 1; // 0 mean yolo,1 mean seeta
 };
 #endif
 

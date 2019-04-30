@@ -138,6 +138,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="alignment\CStruct.h" />
+    <ClInclude Include="alignment\FaceDetector2.h" />
     <ClInclude Include="alignment\PointDetector2.h" />
     <ClInclude Include="alignment\Struct_cv.h" />
     <ClInclude Include="common.h" />

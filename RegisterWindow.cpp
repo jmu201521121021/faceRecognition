@@ -2,11 +2,12 @@
 #include "RegisterWindow.h"
 #include <QHBoxLayout>
 #include <qmessagebox.h>
+#include <QFileDialog>
 #include <io.h>
 #include <direct.h>
 
 //QWidget *parent, 
-RegisterWindow::RegisterWindow(FaceDetector *faceDetector,FaceAlignment *faceAlignment,FaceRecognition *faceRecognition) : QWidget()
+RegisterWindow::RegisterWindow(FaceDetector *faceDetector,FaceAlignment *faceAlignment,FaceRecognition *faceRecognition) 
 {
 	//初始化检测器
 	this->faceDetector = faceDetector;  //从MainWindw中传递过来的检测器。（可以防止重复初始化检测器，节约时间和内存）
@@ -21,65 +22,72 @@ RegisterWindow::RegisterWindow(FaceDetector *faceDetector,FaceAlignment *faceAli
 }
 RegisterWindow::~RegisterWindow()
 {
+	cleanView();
+	releaseModel();
+}
+void RegisterWindow::releaseModel() {
+	if (faceDetector) {
+		delete faceDetector;
+		faceDetector = NULL;
+	}
+	if (faceAlignment) {
+		delete faceAlignment;
+		faceAlignment = NULL;
+	}
+	if (faceRecognition) {
+		delete faceRecognition;
+		faceRecognition = NULL;
+	}
 }
 /**
 初始化界面
 */
 void RegisterWindow::initView()
 {
+	centralWidget = new QWidget(); //中央容器
+	/*右边布局初始化*/
+	rightTopLayout = new QGridLayout();
+	rightTopLayout->setSpacing(5);
+	rightTopLayout->setHorizontalSpacing(5);
+	//rightTopLayout->setAlignment(Qt::AlignCenter);
+	rightTopLayout->setMargin(5);
+	mainGridLayout = new QGridLayout(centralWidget);
+	mainGridLayout->setSpacing(5);
+
 	this->setWindowTitle(SQ("注册"));
 	this->setFixedSize(1000, 700);
 
 	//左边
 	mainShow = new QLabel();
-	mainShow->setFixedSize(650, 650);
+	mainShow->setFixedSize(640, 480);
 	mainShow->setStyleSheet("border:1px groove #242424");
-	QHBoxLayout *left = new QHBoxLayout();
-	left->addWidget(mainShow);
-	left->setMargin(10);
 
 	//右边
 	//上
 	subShow = new QLabel();
 	subShow->setFixedSize(300, 300);
 	subShow->setStyleSheet("border:1px groove #242424");
-	QHBoxLayout *rightTop = new QHBoxLayout();
-	rightTop->addWidget(subShow);
-	//rightTop->setAlignment(Qt::AlignLeft);
 	//中
 	nameLabel = new QLabel(SQ("姓名:"));
+	nameLabel->setAlignment(Qt::AlignRight);
 	noLabel = new QLabel(SQ("学号:"));
+	noLabel->setAlignment(Qt::AlignRight);
 	collegeLabel = new QLabel(SQ("学院:"));
+	collegeLabel->setAlignment(Qt::AlignRight);
 	classLabel = new QLabel(SQ("班级:"));
-	QVBoxLayout *rightMidL = new QVBoxLayout();
-	rightMidL->setAlignment(Qt::AlignLeft);
-	rightMidL->addWidget(nameLabel);
-	rightMidL->addWidget(noLabel);
-	rightMidL->addWidget(collegeLabel);
-	rightMidL->addWidget(classLabel);
+    classLabel->setAlignment(Qt::AlignRight);
 
 	nameEdit = new QLineEdit();
-	nameEdit->setFixedSize(200, 30);
+	nameEdit->setFixedSize(180, 30);
 	noEdit = new QLineEdit();
-	noEdit->setFixedSize(200, 30);
+	noEdit->setFixedSize(180, 30);
 	collegeEdit = new QLineEdit();
-	collegeEdit->setFixedSize(200, 30);
+	collegeEdit->setFixedSize(180, 30);
 	classEdit = new QLineEdit();
-	classEdit->setFixedSize(200, 30);
-	QVBoxLayout *rightMidR = new QVBoxLayout();
-	rightMidR->setAlignment(Qt::AlignLeft);
-	rightMidR->addWidget(nameEdit);
-	rightMidR->addWidget(noEdit);
-	rightMidR->addWidget(collegeEdit);
-	rightMidR->addWidget(classEdit);
-
-	QHBoxLayout *rightMid = new QHBoxLayout();
-	rightMid->addLayout(rightMidL);
-	rightMid->addLayout(rightMidR);
-
+	classEdit->setFixedSize(180, 30);
 	//下
 	shotButton = new QPushButton();
-	shotButton->setText(SQ("拍摄"));
+	shotButton->setText(SQ("打开摄像头"));
 	shotButton->setFixedSize(70, 30);
 	connect(shotButton, SIGNAL(clicked()), this, SLOT(shotButtonSlot()));
 
@@ -93,32 +101,48 @@ void RegisterWindow::initView()
 	quitButton->setFixedSize(70, 30);
 	connect(quitButton, SIGNAL(clicked()), this, SLOT(quitButtonSlot()));
 
-	QHBoxLayout *rightButtom = new QHBoxLayout();
-	rightButtom->addWidget(shotButton);
-	rightButtom->addWidget(confirmButton);
-	rightButtom->addWidget(quitButton);
-	rightButtom->setAlignment(Qt::AlignHCenter);
-	rightButtom->setSpacing(10);
+	upFaceButton = new QPushButton();
+	upFaceButton->setText(SQ("上传"));
+	upFaceButton->setFixedSize(70, 30);
+	connect(upFaceButton, SIGNAL(clicked()), this, SLOT(upFaceButtonSlot()));
 
-	QVBoxLayout *right = new QVBoxLayout();
-	right->addLayout(rightTop);
-	right->addLayout(rightMid);
-	right->addLayout(rightButtom);
+	upBatchFaceButton = new QPushButton();
+	upBatchFaceButton->setText(SQ("批量上传"));
+	upBatchFaceButton->setFixedSize(70, 30);
+	connect(upBatchFaceButton, SIGNAL(clicked()), this, SLOT(upBatchFaceButtonSlot()));
 
-	//整合
-	QHBoxLayout *mainLayout = new QHBoxLayout(this);
-	mainLayout->addLayout(left);
-	mainLayout->addLayout(right);
+	rightTopLayout->addWidget(subShow, 0, 0, 1, 3);
+	rightTopLayout->addWidget(nameLabel, 1, 0, 1, 1);
+	rightTopLayout->addWidget(nameEdit, 1, 1, 1, 2);
+	rightTopLayout->addWidget(noLabel, 2, 0, 1, 1);
+	rightTopLayout->addWidget(noEdit, 2, 1, 1, 2);
+	rightTopLayout->addWidget(collegeLabel, 3, 0, 1, 1);
+	rightTopLayout->addWidget(collegeEdit, 3, 1, 1, 2);
+	rightTopLayout->addWidget(classLabel, 4, 0, 1, 1);
+	rightTopLayout->addWidget(classEdit, 4, 1, 1, 2);
+	rightTopLayout->addWidget(shotButton, 5, 0, 1, 1);
+	rightTopLayout->addWidget(upFaceButton, 5, 1, 1, 1);
+	rightTopLayout->addWidget(upBatchFaceButton, 5, 2, 1, 1);
+	rightTopLayout->addWidget(confirmButton, 6, 0,1, 1);
+	rightTopLayout->addWidget(quitButton, 6, 1, 1, 1);
+
+	subShowWidget = new QWidget(centralWidget);
+	subShowWidget->setLayout(rightTopLayout);
+
+	mainGridLayout->addWidget(mainShow, 0, 0, 1, 1);
+	mainGridLayout->addWidget(subShowWidget, 0, 1, 1, 1);
+	// this->showMaximized();//设置全屏显示
+	this->setCentralWidget(centralWidget);
+	this->setFixedSize(1000, 600);
 }
 /**
 初始化摄像头
 */
 void RegisterWindow::initCapture()
 {
-	if (!capture.isOpened()) {
-		capture.open(0);
+	if (capture.isOpened()) {
+		capture.release();
 	}
-	
 }
 
 /**
@@ -186,6 +210,14 @@ void RegisterWindow::cleanView()
 		delete quitButton;
 		quitButton = NULL;
 	}
+	if (upFaceButton) {
+		delete upFaceButton;
+		upFaceButton = NULL;
+	}
+	if (upBatchFaceButton) {
+		delete upBatchFaceButton;
+		upBatchFaceButton = NULL;
+	}
 }
 
 /*
@@ -204,46 +236,41 @@ bool RegisterWindow::checkInformation()
 	return true;
 }
 
-/**
-拍摄按钮 - 拍摄
-把 mainShow 中的人脸图片放到 subShow 中,提取特征
-*/
-void RegisterWindow::shotButtonSlot()
-{
-	//识别，主要是为了获取featureMap
-	if (capture.isOpened()) {
-		capture.release();
-	}
-	else {
-		capture.open(0);
-	}
-	if (rFaceStructParam.faceParams.size() == 0) {
-		QMessageBox message(QMessageBox::NoIcon, SQ("确定"), SQ("<font color = 'red'> 请重新拍照 </font>"));
+void RegisterWindow::upFaceButtonSlot() {
+	registerType = 1;
+	QString fileName = QFileDialog::getOpenFileName(this, SQ("选择图片"), "", tr("Images (*.png *.bmp *.jpg)"));
+	if (fileName.isEmpty()) {
+		QMessageBox message(QMessageBox::NoIcon, SQ("确定"), SQ("<font color = 'red'> 图片选择错误，请重新选择 </font>"));
 		message.exec();
 		return;
 	}
-	//this->faceRecognition->recognize(rImageAndParam, 0, true);
-	/*struct FaceStructParam faceStructParam;
+	// 清洗
+	FaceStructParam faceStructParam;
 	rFaceStructParam = faceStructParam;
-	struct FaceStructParam::FaceParam faceParam;*/
-	std::vector<cv::Point2f> landmarkPoints;
+
+	cv::Mat image = cv::imread(QS(fileName));
+	rFaceStructParam.image = image.clone();
+
+	cv::Mat drawMat = image.clone();
+	std::vector<cv::Point2f> points;
+	double simScore;
+	std::string name;
+	std::vector<bbox_t> boxes = faceDetector->faceDetectBoxes(image);
+	for (int i = 0; i < boxes.size(); i++) {
+		struct FaceStructParam::FaceParam faceParam;
+		faceParam.detectBox = boxes[i];
+		rFaceStructParam.faceParams.push_back(faceParam);
+		drawAllMessages(drawMat, boxes[i], points, simScore, name, false);
+	}
+	if (boxes.size() == 0) {
+		QMessageBox message(QMessageBox::NoIcon, SQ("确定"), SQ("<font color = 'red'> 未检测到人脸，请重新上传图片 </font>"));
+		message.exec();
+		return;
+	}
+	//draw_boxes(picture, result_vec, obj_names, spent.count());//画框
+	setImage2Label(drawMat, mainShow);
 	cv::Mat detectImg;
-	// 关键点检测
-	faceAlignment->landmarkFace(rFaceStructParam.image,rFaceStructParam.faceParams[0].detectBox, landmarkPoints);
-	faceAlignment->transformImgAndPoint(rFaceStructParam.image, rFaceStructParam.faceParams[0].detectBox, 112, detectImg, landmarkPoints);
-	
-	// 对齐
-	cv::Mat alignFace;
-	faceAlignment->alignFace(detectImg, landmarkPoints, alignFace);
-	rFaceStructParam.faceParams[0].featureMap =faceRecognition->makeFeature(alignFace);
-	// 赋值
-	rFaceStructParam.faceParams[0].landmarks = landmarkPoints;
-	// rFaceStructParam.faceParams[0].push_back(faceParam);
-	// faceParam.landmarks = landmarkPoints;
-	// 对齐
-	// cv::Mat alignFace;
-	//faceAlignment->alignFace(detectImg, landmarkPoints, alignFace);
-	/*  先检查填写信息的完整性   */
+	this->predictFace(detectImg);
 	if (checkInformation() == false)
 	{
 		//qDebug() << "22OK!";
@@ -258,31 +285,160 @@ void RegisterWindow::shotButtonSlot()
 	QMessageBox message(QMessageBox::NoIcon, SQ("确定"), SQ("<font color = 'blue'> 信息正确 </font>"));
 	message.exec();
 }
-
-void RegisterWindow::paintEvent(QPaintEvent *e)
-{
-	
-	if (capture.isOpened())
-	{
+void RegisterWindow::upBatchFaceButtonSlot() {
+	registerType = 2;
+	QString file = QFileDialog::getExistingDirectory(this, SQ("选择文件夹"), ""); //getOpenFileName(this, SQ("选择图片"), "", tr("Images (*.png *.bmp *.jpg)"));
+	QDir dirPath(file);
+	QStringList nameFilters;
+	nameFilters << "*.jpg" << "*.png"<<"*.bmp";
+	QStringList files = dirPath.entryList(nameFilters, QDir::Files | QDir::Readable, QDir::Name);
+	if (files.isEmpty()) {
+		QMessageBox message(QMessageBox::NoIcon, SQ("确定"), SQ("<font color = 'red'> 请重新选择文件夹，只支持jpg、png、bmp格式图片 </font>"));
+		message.exec();
+		return;
+	}
+	for (auto path : files) {
+		QString fileName = file +"/"+ path;
 		FaceStructParam faceStructParam;
 		rFaceStructParam = faceStructParam;
-		capture >> img;
-		rFaceStructParam.image = img.clone();
-		cv::Mat drawMat = img.clone();
+
+		cv::Mat image = cv::imread(QS(fileName));
+		rFaceStructParam.image = image.clone();
 		std::vector<cv::Point2f> points;
-		double simScore;
-		std::string name;
-		std::vector<bbox_t> boxes = faceDetector->faceDetectBoxes(img);
+		std::vector<bbox_t> boxes = faceDetector->faceDetectBoxes(image);
 		for (int i = 0; i < boxes.size(); i++) {
 			struct FaceStructParam::FaceParam faceParam;
 			faceParam.detectBox = boxes[i];
 			rFaceStructParam.faceParams.push_back(faceParam);
-			drawAllMessages(drawMat, boxes[i], points, simScore, name, false);
+		}
+		if (boxes.size() > 0) {
+			cv::Mat detectImg;
+			this->predictFace(detectImg);
+			this->saveMessage(fileName);
+			qDebug() << fileName;
+		}
+	}
+}
+/**
+拍摄按钮 - 拍摄
+把 mainShow 中的人脸图片放到 subShow 中,提取特征
+*/
+void RegisterWindow::shotButtonSlot()
+{
+	//识别，主要是为了获取featureMap
+	registerType = 0;
+	if (this->shotButton->text()== SQ("打开摄像头")){
+		shotButton->setText(SQ("拍照"));
+		capture.open(0);
+	}
+	else if (this->shotButton->text() == SQ("拍照")) {
+		capture.release();
+		shotButton->setText(SQ("打开摄像头"));
+		// mainShow->clear();
+		if (rFaceStructParam.faceParams.size() == 0) {
+			QMessageBox message(QMessageBox::NoIcon, SQ("确定"), SQ("<font color = 'red'> 请重新拍照 </font>"));
+			message.exec();
+			return;
+		}
+		cv::Mat detectImg;
+		this->predictFace(detectImg);
+
+		if (checkInformation() == false)
+		{
+			//qDebug() << "22OK!";
+			QMessageBox message(QMessageBox::NoIcon, SQ("确定"), SQ("<font color = 'red'> 请输入完整信息 </font>"));
+			message.exec();
+			return;
+		}
+		/*    信息是完整的   */
+		setImage2Label(detectImg, subShow);
+
+		//qDebug() << "OK!";
+		QMessageBox message(QMessageBox::NoIcon, SQ("确定"), SQ("<font color = 'blue'> 信息正确 </font>"));
+		message.exec();
+	}
+}
+
+void RegisterWindow::paintEvent(QPaintEvent *e)
+{
+	if (registerType == 0) {
+		if (capture.isOpened()) {
+			FaceStructParam faceStructParam;
+			rFaceStructParam = faceStructParam;
+			capture >> img;
+			rFaceStructParam.image = img.clone();
+			cv::Mat drawMat = img.clone();
+			std::vector<cv::Point2f> points;
+			double simScore;
+			std::string name;
+			std::vector<bbox_t> boxes = faceDetector->faceDetectBoxes(img);
+			for (int i = 0; i < boxes.size(); i++) {
+				struct FaceStructParam::FaceParam faceParam;
+				faceParam.detectBox = boxes[i];
+				rFaceStructParam.faceParams.push_back(faceParam);
+				drawAllMessages(drawMat, boxes[i], points, simScore, name, false);
+			}
+
+			//draw_boxes(picture, result_vec, obj_names, spent.count());//画框
+			setImage2Label(drawMat, mainShow);
+		}
+	}
+	else {
+		if (capture.isOpened()) {
+			capture.release();
 		}
 		
-		//draw_boxes(picture, result_vec, obj_names, spent.count());//画框
-		setImage2Label(drawMat, mainShow);
 	}
+}
+
+void RegisterWindow::saveMessage(const QString imagePath) {
+	QFileInfo fileInfo = QFileInfo(imagePath);
+	string savePath = "../faces/";
+	if (_access(savePath.c_str(), 0) == -1) //不存在
+		mkdir(savePath.c_str());
+	//把截取的人脸图片放入到磁盘中
+	std::string pictureRoute;
+	if (registerType == 2) {
+		pictureRoute = savePath + QS(fileInfo.fileName());
+	}
+	else {
+		pictureRoute = savePath + QS(noEdit->text()) + ".png";
+	}
+	cv::Mat rectImage;
+	// 裁剪人脸
+	bbox_t bbox = rFaceStructParam.faceParams[0].detectBox;
+	cv::Rect rect(bbox.x, bbox.y, bbox.w, bbox.h);
+	rFaceStructParam.image(rect).copyTo(rectImage);
+	cv::imwrite(pictureRoute, rectImage);
+	//TODO:  保存信息到数据库中
+	if (registerType == 2) { // 批量上传
+		QString file_name = fileInfo.fileName();
+		QString messagesList = file_name.split(".")[0]; // 信息
+		QStringList datas = messagesList.split("_");
+		infParam.setName(QS(datas[0]));
+		infParam.setNo(QS(datas[1]));
+		infParam.setCollege(QS(datas[2]));
+		infParam.setClass(QS(datas[3]));
+		infParam.setPictureRoute(pictureRoute);
+	}
+	else {
+		infParam.setName(QS(QString(nameEdit->text())));
+		infParam.setNo(QS(QString(noEdit->text())));
+		infParam.setCollege(QS(QString(collegeEdit->text())));
+		infParam.setClass(QS(QString(classEdit->text())));
+		infParam.setPictureRoute(pictureRoute);
+	}
+
+	//插入到数据库中
+	//输入参数
+	//1、featureMap
+	//2、注册信息
+	sqlSplite->insert(rFaceStructParam.faceParams[0].featureMap, infParam);//featureMap 和 基本的信息
+
+																		   ///////
+																		   //显示“保存成功”对话框
+																		   //if(success)
+	
 }
 /**
 确定按钮 - 确定
@@ -295,36 +451,9 @@ void RegisterWindow::confirmButtonSlot()
 		message.exec();
 		return;
 	}
-	string savePath = "../faces/";
-	if (_access(savePath.c_str(), 0) == -1) //不存在
-		mkdir(savePath.c_str());
-	//把截取的人脸图片放入到磁盘中
-	std::string pictureRoute = savePath + QS(noEdit->text()) + ".png";
-	cv::Mat rectImage;
-	// 裁剪人脸
-	bbox_t bbox = rFaceStructParam.faceParams[0].detectBox;
-	cv::Rect rect(bbox.x, bbox.y, bbox.w, bbox.h);
-	rFaceStructParam.image(rect).copyTo(rectImage);
-	cv::imwrite(pictureRoute,rectImage);
-	//TODO:  保存信息到数据库中
-
-	infParam.setName(QS(QString(nameEdit->text())));
-	infParam.setNo(QS(QString(noEdit->text())));
-	infParam.setCollege(QS(QString(collegeEdit->text())));
-	infParam.setClass(QS(QString(classEdit->text())));
-	infParam.setPictureRoute(pictureRoute);
-
-	//插入到数据库中
-	//输入参数
-	//1、featureMap
-	//2、注册信息
-	sqlSplite->insert(rFaceStructParam.faceParams[0].featureMap, infParam);//featureMap 和 基本的信息
-
-															 ///////
-															 //显示“保存成功”对话框
-															 //if(success)
+	saveMessage();
 	QMessageBox message(QMessageBox::NoIcon, SQ("确定"), SQ("<font color = 'red'> 信息保存成功 </font>"));
-	message.setIconPixmap(QPixmap(SQ(pictureRoute)));  //TODO::把人脸图片放在这里！
+	//message.setIconPixmap(QPixmap(SQ(pictureRoute)));  //TODO::把人脸图片放在这里！
 	message.exec();
 }
 /**
@@ -346,4 +475,18 @@ void RegisterWindow::quitSlot() {
 		capture.release();
 	}
 	this->close();
+}
+void RegisterWindow::predictFace(cv::Mat &detectImg) {
+	std::vector<cv::Point2f> landmarkPoints;
+	
+	// 关键点检测
+	faceAlignment->landmarkFace(rFaceStructParam.image, rFaceStructParam.faceParams[0].detectBox, landmarkPoints);
+	faceAlignment->transformImgAndPoint(rFaceStructParam.image, rFaceStructParam.faceParams[0].detectBox, 112, detectImg, landmarkPoints);
+
+	// 对齐
+	cv::Mat alignFace;
+	faceAlignment->alignFace(detectImg, landmarkPoints, alignFace);
+	rFaceStructParam.faceParams[0].featureMap = faceRecognition->makeFeature(alignFace);
+	// 赋值
+	rFaceStructParam.faceParams[0].landmarks = landmarkPoints;
 }

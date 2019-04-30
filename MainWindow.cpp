@@ -6,11 +6,14 @@
 #include <qmenubar.h>
 #include <qDebug.h>
 #include <QMessageBox>
-
+#include <QInputDialog>
 MainWindow::MainWindow(QWidget *parent)
 	: QMainWindow(parent)
 {
+	sqlSplite = new SqlSplite();
+	
 	/*   初始化界面  */
+
 	initView();
 
 	/*读取xml*/
@@ -22,7 +25,7 @@ MainWindow::MainWindow(QWidget *parent)
 	faceAlignment = new FaceAlignment(alignType);
 	/* 初始化人脸识别 */
 	faceRecognition = new FaceRecognition(useGpuRecognize == 1 ? true: false);
-	sqlSplite = new SqlSplite();
+	
 
 }
 
@@ -144,14 +147,6 @@ void MainWindow::cleanMenu()
 void MainWindow::initLayout()
 {
 	centralWidget = new QWidget(); //中央容器
-	////设置背景颜色 / 图片
-	//centralWidget->setAutoFillBackground(true);
-	//QPalette palette;
-	////palette.setColor(QPalette::Background, QColor(192, 253, 123));
-	//palette.setBrush(QPalette::Background, QBrush(QPixmap("C:\\Users\\ylem\\Desktop\\bg.jpg"))); 
-	//centralWidget->setPalette(palette);
-
-
 	//初始化 - 显示图片的QLabel
 	mainShow = new QLabel();
 	mainShow->setAlignment(Qt::AlignCenter);  //居中
@@ -195,6 +190,7 @@ void MainWindow::initLayout()
 	rightTopLayout->setHorizontalSpacing(60);
 	//rightTopLayout->setAlignment(Qt::AlignCenter);
 	rightTopLayout->setMargin(5);
+
 	
 	// 字体设置
 	QFont ft;
@@ -281,9 +277,39 @@ void MainWindow::initLayout()
 	subShowWidget->setLayout(rightTopLayout);
 	
 	//初始化 - 右下角
+	rightDownLayout = new QGridLayout();
+	rightDownLayout->setSpacing(10);
+	rightDownLayout->setHorizontalSpacing(10);
+	rightDownLayout->setMargin(5);
+
+	addActButton = new QPushButton();
+	addActButton->setFixedSize(60, 30);
+	addActButton->setText(SQ("添加活动"));
+	startRecordButton = new QPushButton();
+	startRecordButton->setFixedSize(60, 30);
+	startRecordButton->setText(SQ("开始考勤"));
 	informationShow = new QLabel();
 	informationShow->setStyleSheet("border:1px groove #242424");
-	
+
+	selectBox = new QComboBox();
+	selectBox->setFixedSize(100, 30);
+	std::vector<QString> comBoxStr = sqlSplite->selectActivity();
+	for (auto str :comBoxStr) {
+		selectBox->addItem(str);
+	}
+	// 设置活动
+	// setActivityName(selectBox->currentText());
+	//qDebug() <<"sdsdsd"<< getActivityName();
+	connect(addActButton, SIGNAL(clicked()), this, SLOT(addActSlot()));
+	connect(startRecordButton, SIGNAL(clicked()), this, SLOT(startRecordSlot()));
+	connect(selectBox, SIGNAL(activated(int)), this, SLOT(selectBoxIndex(int)));
+
+	rightDownLayout->addWidget(addActButton, 0, 0, 1, 1);
+	rightDownLayout->addWidget(startRecordButton, 0, 2, 1, 1);
+	rightDownLayout->addWidget(informationShow, 1, 0, 1, 3);
+	rightDownLayout->addWidget(selectBox, 0, 1, 1, 1);
+	rightDownWidget = new QWidget(centralWidget);
+	rightDownWidget->setLayout(rightDownLayout);
 	//初始化 - 主布局
 	mainGridLayout = new QGridLayout(centralWidget);
 	mainGridLayout->setSpacing(10);
@@ -297,7 +323,7 @@ void MainWindow::initLayout()
 	//mainGridLayout->addLayout(rightTopLayout, 0, 2, 1, 1);
 	mainGridLayout->addWidget(subShowWidget, 1, 1, 1, 1);
 	mainGridLayout->addWidget(centralLine, 2, 1, 1, 1);
-	mainGridLayout->addWidget(informationShow, 3, 1, 1, 1);
+	mainGridLayout->addWidget(rightDownWidget, 3, 1, 1, 1);
 	//mainGridLayout->addWidget(rightSplitLine, 0, 3, 3, 1);
 
 	// centralWidget->setAutoFillBackground(true);
@@ -470,7 +496,7 @@ void MainWindow::openPictureSlot()
 	//picture = cv::imread(QS(fileName));
 	//imageAndParam.image = cv::imread(QS(fileName));
 
-	faceStructParams.image( cv::imread(QS(fileName)) );
+	faceStructParams.image = cv::imread(QS(fileName));
 	//setImage2Label(imageAndParam.image, mainShow);  //处理后的图片挂载到mainShow上
 
 	//改变模式 - 图片
@@ -534,7 +560,7 @@ struct InformationParam  MainWindow::predictFace(cv::Mat img, bool isRegister, s
 	{
 		vector<InformationParam> detSet = this->getDataSetInfomations();
 
-		int maxIndex;
+		int maxIndex = 0;
 		float maxSim = -1, sim;
 
 		if (detSet.size() == 0)
@@ -546,6 +572,7 @@ struct InformationParam  MainWindow::predictFace(cv::Mat img, bool isRegister, s
 		for (int i = 0; i < detSet.size(); i++)
 		{
 			sim = faceRecognition->caculateSim(strFeature, detSet[i].getStringFeature());
+			qDebug() << "相似度:"<<sim;
 			if (sim > maxSim)
 			{
 				maxSim = sim;
@@ -556,10 +583,11 @@ struct InformationParam  MainWindow::predictFace(cv::Mat img, bool isRegister, s
 		infParam = detSet[maxIndex];
 		qDebug() << "maxSim" << maxSim << " name:" << SQ(infParam.getName());
 	}
+	// 插入数据库表record
+	if (this->isStartRecord) {
+		sqlSplite->insertRecord(this->getRecordId(), SQ(infParam.getNo()), getActivityId());
+	}
 	return infParam;
-	
-	
-	
 }
 
 /**
@@ -615,6 +643,7 @@ void MainWindow::checkFunction()
 		std::vector<bbox_t> boxes = faceDetector->faceDetectBoxes(faceStructParams.image);
 		bool hasRe;
 		int index;
+		qDebug() << "boxesNumber" << boxes.size();
 		for (int i = 0; i < boxes.size(); i++) {
 			struct FaceStructParam::FaceParam faceParam;
 			cv::Mat detectImg;
@@ -798,41 +827,35 @@ bool MainWindow::readXmlData(cv::String xmlFileName) {
 	}
 	
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+void MainWindow::addActSlot() {      // 添加活动事件
+	QString activityName = QInputDialog::getText(this, SQ("活动"),
+		SQ("输入活动名称:"));
+	qDebug() << activityName;
+	bool success = sqlSplite->insertActivity(activityName);
+	if (success) {
+		selectBox->clear();
+		std::vector<QString> comBoxStr = sqlSplite->selectActivity();
+		for (auto str : comBoxStr) {
+			selectBox->addItem(str);
+		}
+	}
+}
+void MainWindow::startRecordSlot() {
+	if (isStartRecord) {
+		startRecordButton->setText(SQ("开始考勤"));
+		this->isStartRecord = false;
+	}
+	else {
+		startRecordButton->setText(SQ("结束考勤"));
+		this->isStartRecord = true;
+	}
+}
+void MainWindow::selectBoxIndex(int index) {
+	qDebug() << index;
+	qDebug() << this->selectBox->currentIndex();
+	// 活动ID
+	setActivityId(this->selectBox->currentIndex() + 1);
+	// 记录跟新
+	setRecordId(sqlSplite->getRecordId() + 1);
+	qDebug() << "id:"<<getRecordId();
+}
