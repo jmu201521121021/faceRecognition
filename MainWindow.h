@@ -19,6 +19,8 @@
 #include <string>
 #include <qDebug.h>
 #include <QCombobox>
+#include <QAxObject>
+
 class MainWindow : public QMainWindow
 {
 	Q_OBJECT
@@ -168,6 +170,14 @@ public:
 	inline int getRecordId() {
 		return this->recordId;
 	}
+	inline void setPushRecordId(int pushRecordId) {
+		this->pushRecordId = pushRecordId;
+	}
+	inline int getPushRecordId() {
+		return this->pushRecordId;
+	}
+	/*写入excel操作*/
+	void writeExcel();
 private slots:
 
 	/*   槽 - 模式选择   */
@@ -185,6 +195,8 @@ private slots:
 	void addActSlot();      // 添加活动事件
 	void startRecordSlot(); 
 	void selectBoxIndex(int index);
+	void selectRecordIndex(int index);
+	void pushRecordSlot();
 private:
 	
 
@@ -249,7 +261,10 @@ private:
 	QPushButton *addActButton;      // 添加活动名称
 	QPushButton *startRecordButton; // 开始考勤按钮
 	QComboBox *selectBox;           // 活动选择
-
+	QLabel *selectLabel;            //
+	QLabel *selectRecordLabel;
+	QComboBox *selectRecord;
+	QPushButton *pushButton;
 	/*   标志位    */
 	//mode = 1   ->   picture;
 	//mode = 2   ->   video;
@@ -308,6 +323,8 @@ private:
 	std::vector<QString> recordNames;
 	// 考勤ID
 	int recordId = -1;
+	// 导出ID
+	int pushRecordId = -1;
 };
 
 #endif // MAINWINDOW_H

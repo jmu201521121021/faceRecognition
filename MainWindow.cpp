@@ -7,6 +7,10 @@
 #include <qDebug.h>
 #include <QMessageBox>
 #include <QInputDialog>
+#include <qfile.h>
+#include <io.h>
+#include <direct.h>
+using namespace std;
 MainWindow::MainWindow(QWidget *parent)
 	: QMainWindow(parent)
 {
@@ -278,36 +282,67 @@ void MainWindow::initLayout()
 	
 	//初始化 - 右下角
 	rightDownLayout = new QGridLayout();
-	rightDownLayout->setSpacing(10);
-	rightDownLayout->setHorizontalSpacing(10);
+	rightDownLayout->setSpacing(5);
+	rightDownLayout->setHorizontalSpacing(5);
 	rightDownLayout->setMargin(5);
 
 	addActButton = new QPushButton();
-	addActButton->setFixedSize(60, 30);
-	addActButton->setText(SQ("添加活动"));
+	addActButton->setFixedSize(100, 40);
+	addActButton->setText(SQ("添加新活动类型"));
+
+	selectLabel = new QLabel();
+	selectLabel->setText(SQ("选择活动类型:"));
+	selectLabel->setAlignment(Qt::AlignCenter);
+	selectLabel->setFixedSize(120, 40);
+
 	startRecordButton = new QPushButton();
-	startRecordButton->setFixedSize(60, 30);
+	startRecordButton->setFixedSize(80, 40);
 	startRecordButton->setText(SQ("开始考勤"));
 	informationShow = new QLabel();
 	informationShow->setStyleSheet("border:1px groove #242424");
 
 	selectBox = new QComboBox();
-	selectBox->setFixedSize(100, 30);
+	selectBox->setFixedSize(250, 40);
+	selectBox->addItem(SQ("选择活动类型:"));
 	std::vector<QString> comBoxStr = sqlSplite->selectActivity();
 	for (auto str :comBoxStr) {
 		selectBox->addItem(str);
 	}
+
+	selectRecordLabel = new QLabel();
+	selectRecordLabel->setText(SQ("选择考勤记录"));
+	selectRecordLabel->setFixedSize(250, 40);
+
+	selectRecord = new QComboBox();
+	selectRecord->setFixedSize(250, 40);
+	selectRecord->addItem(SQ("选择考勤记录"));
+	std::vector<QString> comRecordStr = sqlSplite->getRecordMessage();
+	for (auto str : comRecordStr) {
+		selectRecord->addItem(str);
+	}
+
+	pushButton = new QPushButton();
+	pushButton->setText(SQ("导出"));
+	pushButton->setFixedSize(80, 40);
 	// 设置活动
 	// setActivityName(selectBox->currentText());
 	//qDebug() <<"sdsdsd"<< getActivityName();
 	connect(addActButton, SIGNAL(clicked()), this, SLOT(addActSlot()));
 	connect(startRecordButton, SIGNAL(clicked()), this, SLOT(startRecordSlot()));
 	connect(selectBox, SIGNAL(activated(int)), this, SLOT(selectBoxIndex(int)));
+	connect(selectRecord, SIGNAL(activated(int)), this, SLOT(selectRecordIndex(int)));
+	connect(pushButton, SIGNAL(clicked()), this, SLOT(pushRecordSlot()));
 
 	rightDownLayout->addWidget(addActButton, 0, 0, 1, 1);
-	rightDownLayout->addWidget(startRecordButton, 0, 2, 1, 1);
-	rightDownLayout->addWidget(informationShow, 1, 0, 1, 3);
+	//rightDownLayout->addWidget(selectLabel, 0, 1, 1, 1);
 	rightDownLayout->addWidget(selectBox, 0, 1, 1, 1);
+	rightDownLayout->addWidget(startRecordButton, 0, 2, 1, 1);
+	rightDownLayout->addWidget(informationShow, 2, 0, 1, 4);
+	
+	//rightDownLayout->addWidget(selectRecordLabel, 1, 1, 1, 1);
+	rightDownLayout->addWidget(selectRecord, 1,1,1,1);
+	rightDownLayout->addWidget(pushButton, 1, 2, 1, 1);
+
 	rightDownWidget = new QWidget(centralWidget);
 	rightDownWidget->setLayout(rightDownLayout);
 	//初始化 - 主布局
@@ -572,7 +607,7 @@ struct InformationParam  MainWindow::predictFace(cv::Mat img, bool isRegister, s
 		for (int i = 0; i < detSet.size(); i++)
 		{
 			sim = faceRecognition->caculateSim(strFeature, detSet[i].getStringFeature());
-			qDebug() << "相似度:"<<sim;
+			// qDebug() << "相似度:"<<sim;
 			if (sim > maxSim)
 			{
 				maxSim = sim;
@@ -584,8 +619,8 @@ struct InformationParam  MainWindow::predictFace(cv::Mat img, bool isRegister, s
 		qDebug() << "maxSim" << maxSim << " name:" << SQ(infParam.getName());
 	}
 	// 插入数据库表record
-	if (this->isStartRecord) {
-		sqlSplite->insertRecord(this->getRecordId(), SQ(infParam.getNo()), getActivityId());
+	if (this->isStartRecord && faceParam.score >= getSimTheta()) {
+		sqlSplite->insertRecord(this->getRecordId(), SQ(infParam.getNo()));
 	}
 	return infParam;
 }
@@ -844,18 +879,126 @@ void MainWindow::startRecordSlot() {
 	if (isStartRecord) {
 		startRecordButton->setText(SQ("开始考勤"));
 		this->isStartRecord = false;
+		
 	}
 	else {
 		startRecordButton->setText(SQ("结束考勤"));
 		this->isStartRecord = true;
+		// 记录更新
+		setRecordId(sqlSplite->getRecordId() + 1);
+		qDebug() << "id:" << getRecordId();
+		// 插入conTitle表
+		sqlSplite->insertConTitle(getActivityId());
+		// 更新会议记录
+		std::vector<QString> comRecordStr = sqlSplite->getRecordMessage();
+		for (auto str : comRecordStr) {
+			selectRecord->addItem(str);
+		}
 	}
 }
+/*
+选择活动
+*/
 void MainWindow::selectBoxIndex(int index) {
 	qDebug() << index;
 	qDebug() << this->selectBox->currentIndex();
 	// 活动ID
-	setActivityId(this->selectBox->currentIndex() + 1);
-	// 记录跟新
-	setRecordId(sqlSplite->getRecordId() + 1);
-	qDebug() << "id:"<<getRecordId();
+	setActivityId(this->selectBox->currentIndex());
+	
+}
+/*
+选择已经考勤会议记录RECORDID
+*/
+void MainWindow::selectRecordIndex(int index) {
+	qDebug() << index;
+	qDebug() << this->selectRecord->currentText();
+	setPushRecordId(this->selectRecord->currentText().split("|")[0].toInt());
+}
+void MainWindow::pushRecordSlot() {
+	sqlSplite->getAllRecord(getPushRecordId());
+	qDebug() <<"cs:"<< getPushRecordId();
+	writeExcel();
+}
+void MainWindow::writeExcel() {
+
+	// 从数据库读取数据
+	vector<QString>datas = sqlSplite->getAllRecord(getPushRecordId());
+	// 路径设置
+	QString selectString = this->selectRecord->currentText().replace(":", "-");
+	selectString = selectString.replace(" ", "-");
+	QStringList list = selectString.split("|");
+	QString  fileName = QDir::currentPath() + "/record/"+ list[0] + "_" + list[1]+"_"+ \
+		     list[2] +  ".xlsx";
+	qDebug() << fileName;
+	std::string savePath = "record";
+	QFile filePath(fileName);
+	QList<QVariant> allRowsData;//保存所有行数据
+	allRowsData.clear();
+	if (_access(savePath.c_str(), 0) == -1) //不存在
+		mkdir(savePath.c_str());
+
+	if (!filePath.exists()) {
+		
+		QAxObject *excel = new QAxObject("Excel.Application");     //连接Excel控件
+		excel->dynamicCall("SetVisible (bool Visible)", false);    //不显示窗体
+		excel->setProperty("DisplayAlerts", true);                 //不显示任何警告信息。如果为true那么在关闭是会出现类似“文件已修改，是否保存”的提示
+		QAxObject *workbooks = excel->querySubObject("WorkBooks");//获取工作簿集合
+		workbooks->dynamicCall("Add");//新建一个工作簿
+		QAxObject *workbook = excel->querySubObject("ActiveWorkBook");//获取当前工作簿
+		QAxObject *worksheets = workbook->querySubObject("Sheets");//获取工作表集合
+		QAxObject *worksheet = worksheets->querySubObject("Item(int)", 1);//获取工作表集合的工作表1，即sheet1
+
+		for (int row = 0; row <= datas.size(); row++)
+		{
+			QList<QVariant> aRowData;//保存一行数据
+			if (row == 0) {
+				aRowData.append(QVariant(SQ("班级")));
+				aRowData.append(QVariant(SQ("姓名")));
+				aRowData.append(QVariant(SQ("学号")));
+				aRowData.append(QVariant(SQ("会议名称")));
+				aRowData.append(QVariant(SQ("考勤发布时间")));
+				aRowData.append(QVariant(SQ("签到时间")));
+			}
+			else {
+				QStringList data = datas[row-1].split("|");
+
+				for (int column = 0; column < 6; column++)
+				{
+					aRowData.append(QVariant(data[column]));
+				}
+			}
+			allRowsData.append(QVariant(aRowData));
+		}
+		string num = QS(QString::number(datas.size()+1));
+		QString col = (("A1:F"+num).c_str());
+		QAxObject *range = worksheet->querySubObject("Range(const QString )",col);
+		range->dynamicCall("SetValue(const QVariant&)", QVariant(allRowsData));//存储所有数据到 excel 中,批量操作,速度极快
+		range->querySubObject("Font")->setProperty("Size", 30);//设置字号
+
+		//QAxObject *cell = worksheet->querySubObject("Range(QVariant, QVariant)", "A1");//获取单元格
+		//cell = worksheet->querySubObject("Cells(int, int)", 1, 1);//等同于上一句
+		//cell->dynamicCall("SetValue(const QVariant&)", QVariant(123));//存储一个 int 数据到 excel 的单元格中
+		//cell->dynamicCall("SetValue(const QVariant&)", QVariant("abc"));//存储一个 string 数据到 excel 的单元格中
+
+		//QString str = cell->dynamicCall("Value2()").toString();//读取单元格中的值
+		//cout << "\nThe value of cell is " << str.toStdString() << endl;
+
+		/*QAxObject *font = cell->querySubObject("Font");
+		font->setProperty("Name", itemFont.family());  //设置单元格字体
+		font->setProperty("Bold", itemFont.bold());  //设置单元格字体加粗
+		font->setProperty("Size", itemFont.pixelSize());  //设置单元格字体大小
+		font->setProperty("Italic",itemFont.italic());  //设置单元格字体斜体
+		font->setProperty("Underline", itemFont.underline());  //设置单元格下划线
+		font->setProperty("Color", item->foreground().color());  //设置单元格字体颜色*/
+		worksheet->querySubObject("Range(const QString&)", "1:1")->setProperty("RowHeight", 60);//调整第一行行高
+		
+		workbook->dynamicCall("SaveAs(const QString&)", QDir::toNativeSeparators(fileName));//保存至filepath，注意一定要用QDir::toNativeSeparators将路径中的"/"转换为"\"，不然一定保存不了。
+		workbook->dynamicCall("Close()");//关闭工作簿
+		excel->dynamicCall("Quit()");//关闭excel
+		delete excel;
+		excel = NULL;
+	}
+	else {
+		qDebug() << SQ("表已存在");
+	}
 }

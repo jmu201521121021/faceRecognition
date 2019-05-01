@@ -39,8 +39,13 @@ public:
 	// 活动表
 	vector<QString> selectActivity();
 	// 插入考勤记录表
-	bool insertRecord(int recordId,QString no, int id);
+	bool insertRecord(int recordId,QString no);
+	// 获取考勤表ID
 	int getRecordId();
+	bool insertConTitle(int id);
+	vector<QString> getAllRecord(int recordId);
+	vector<QString> getRecordMessage();
+
 private:
 	//扩容
 	void expand();

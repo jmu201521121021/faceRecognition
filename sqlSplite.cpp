@@ -40,15 +40,20 @@ void SqlSplite::createTable()
 		"ID integer primary key AUTOINCREMENT," \
 		"NAME varchar(50) not null );";
 	char *record = "create table record(" \
-		"RECORDID int not null," \
+		"RECORDID integer not null," \
 		"NO char(20) not null," \
-		"ID integer not null ," \
 		"SIGNDATE timestamp default (datetime('now', 'localtime')),"\
 		"FOREIGN KEY(NO) REFERENCES faceInfo(NO)," \
-		"FOREIGN KEY(ID) REFERENCES activity(ID)," \
-		"PRIMARY KEY(RECORDID,ID));";
+		"FOREIGN KEY(RECORDID) REFERENCES conTitle(RECORDID)," \
+		"PRIMARY KEY(RECORDID,NO));";
+	char *conTitle = "create table conTitle(" \
+		"RECORDID integer primary key  AUTOINCREMENT ," \
+		"ID integer not null,"\
+		"STARTTIME timestamp default (datetime('now', 'localtime')), " \
+		"FOREIGN KEY(ID) REFERENCES activity(ID));";
 	bool successUser = query.exec(user);
 	bool successActivity = query.exec(activity);
+	bool successConTitle = query.exec(conTitle);
 	bool successSign = query.exec(record);
 	if (successUser){
 		qDebug() << SQ("user表结构创建成功！\n");
@@ -66,6 +71,12 @@ void SqlSplite::createTable()
 	}
 	else {
 		qDebug() << SQ("record表结构创建失败, 表已经存在！\n");
+	}
+	if (successConTitle) {
+		qDebug() << SQ("conTitle表结构创建成功！\n");
+	}
+	else {
+		qDebug() << SQ("conTitle表结构创建失败, 表已经存在！\n");
 	}
 }
 
@@ -253,7 +264,7 @@ int SqlSplite::getRecordId() {
 	int max = 0;													//执行SQL语句
 	bool success;
 	QSqlQuery query(db);
-	char *sql = "select max(RECORDID) from record";
+	char *sql = "select max(RECORDID) from conTitle";
 	query.exec(sql);
 	while (query.next()) {
 		max = query.value(0).toInt();;
@@ -261,21 +272,20 @@ int SqlSplite::getRecordId() {
 	}
 	return max;
 }
-bool SqlSplite::insertRecord(int recordId, QString no, int id) {
+bool SqlSplite::insertRecord(int recordId, QString no) {
 	QSqlDatabase db = QSqlDatabase::database("faceDB"); //建立数据库连接
 														//执行SQL语句
 	bool success;
 	QSqlQuery query(db);
-	query.prepare("select * from record where RECORDID = :recordId and ID = :id ");
+	query.prepare("select * from record where RECORDID = :recordId and NO = :no ");
 	query.bindValue(":recordId", recordId);   // 绑定数据到指定的位置
-	query.bindValue(":id", id);
+	query.bindValue(":no", no);
 	query.exec();
 	if (query.next() == NULL) {
-		query.prepare("insert into record(RECORDID,NO,ID) values(?,?,?)");
+		query.prepare("insert into record(RECORDID,NO) values(?,?)");
 		// query.bindValue(0, query.lastInsertId().toInt()+1);
 		query.bindValue(0, recordId);
 		query.bindValue(1, no);
-		query.bindValue(2, id);
 		success = query.exec();
 		if (!success)
 		{
@@ -293,4 +303,59 @@ bool SqlSplite::insertRecord(int recordId, QString no, int id) {
 	}
 	return success;
 
+}
+bool SqlSplite::insertConTitle(int id) {
+	QSqlDatabase db = QSqlDatabase::database("faceDB"); //建立数据库连接												//执行SQL语句
+	bool success;
+	QSqlQuery query(db);
+	query.prepare("insert into conTitle(ID) values(?)");
+	// query.bindValue(0, query.lastInsertId().toInt()+1);
+	query.bindValue(0, id);
+	success = query.exec();
+	if (success) {
+		qDebug() << "conTitle insert data success";
+	}
+	else {
+		qDebug() << "conTitle insert data fail";
+	}
+	return success;
+}
+vector<QString> SqlSplite:: getAllRecord(int recordId){
+	QSqlDatabase db = QSqlDatabase::database("faceDB"); //建立数据库连接												//执行SQL语句
+	bool success;
+	vector<QString>result;
+	QSqlQuery query(db);
+	QString  sql = "select f.CLASS,f.NAME,r.NO,a.NAME,STARTTIME,SIGNDATE " \
+		          "from faceInfo f, conTitle t, record r,activity a " \
+	              "where f.NO = r.NO and r.RECORDID = t.RECORDID and " \
+                   "t.RECORDID =:recordId and a.ID = t.ID;";
+	query.prepare(sql);
+	query.bindValue(":recordId", recordId);   // 绑定数据到指定的位置
+	query.exec();
+	while (query.next()) {
+		QString data = query.value(0).toString() + "|" + query.value(1).toString() + "|" + query.value(2).toString() \
+			+ "|" + query.value(3).toString() + "|" + query.value(4).toString() + "|" +  query.value(5).toString();
+		result.push_back(data);
+		qDebug()<<SQ("查询记录")<<data<<"\n";
+	}
+	return result;
+}
+vector<QString> SqlSplite::getRecordMessage() {
+	QSqlDatabase db = QSqlDatabase::database("faceDB"); //建立数据库连接												//执行SQL语句
+	bool success;
+	vector<QString>result;
+	QSqlQuery query(db);
+	char * sql = "select RECORDID,NAME,STARTTIME from conTitle c, activity a where c.ID = a.ID";
+	success = query.exec(sql);
+	if (!success)
+	{
+		qDebug() << SQ("查询表activity所有信息失败!");
+	}
+	while (query.next())
+	{
+		QString data = (query.value(0).toString()) + "|" + (query.value(1).toString()) + "|" + (query.value(2).toString());
+		result.push_back(data);
+		qDebug() << data;
+	}	
+	return result;
 }
