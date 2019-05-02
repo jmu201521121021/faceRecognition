@@ -1,1 +1,6 @@
-﻿  faceRecognition.vcxproj -> E:\workspaces\bysj\project\faceRecognition\x64\Release\faceRecognition.exe
+﻿  RegisterWindow.cpp
+e:\workspaces\bysj\project\facerecognition\facerecognition\mxnet_inference.h(19): warning C4141: “dllexport”: 使用了多次
+e:\workspaces\bysj\project\facerecognition\facerecognition\registerwindow.cpp(382): warning C4700: 使用了未初始化的局部变量“simScore”
+e:\workspaces\bysj\project\facerecognition\facerecognition\registerwindow.cpp(266): warning C4700: 使用了未初始化的局部变量“simScore”
+    正在创建库 E:\workspaces\bysj\project\faceRecognition\x64\Release\faceRecognition.lib 和对象 E:\workspaces\bysj\project\faceRecognition\x64\Release\faceRecognition.exp
+  faceRecognition.vcxproj -> E:\workspaces\bysj\project\faceRecognition\x64\Release\faceRecognition.exe

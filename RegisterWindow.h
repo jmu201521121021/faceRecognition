@@ -7,7 +7,7 @@
 #include <QPushButton>
 #include <QGridLayout>
 #include <QMainWindow>
-
+#include <QComboBox>
 #include "faceDetector.h"
 #include "faceRecognition.h"
 #include "faceAlignment.h"
@@ -75,7 +75,7 @@ private:
 	QLabel *noLabel;
 	QLineEdit *noEdit;
 	QLabel *collegeLabel;
-	QLineEdit *collegeEdit;
+	QComboBox *collegeEdit;
 	QLabel *classLabel;
 	QLineEdit *classEdit;
 
@@ -91,6 +91,7 @@ private:
 	QGridLayout *rightTopLayout;
 	bool checkInformation();
 	int registerType = -1;
+	vector<QString>collegeNames = { SQ("计算机工程学院"),SQ("机械学院"),SQ("理学院"),SQ("信息工程学院"),SQ("航海学院"),SQ("外国语学院") };
 
 };
 

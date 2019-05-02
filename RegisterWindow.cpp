@@ -81,8 +81,11 @@ void RegisterWindow::initView()
 	nameEdit->setFixedSize(180, 30);
 	noEdit = new QLineEdit();
 	noEdit->setFixedSize(180, 30);
-	collegeEdit = new QLineEdit();
+	collegeEdit = new QComboBox();
 	collegeEdit->setFixedSize(180, 30);
+	for (auto name : collegeNames) {
+		collegeEdit->addItem(name);
+	}
 	classEdit = new QLineEdit();
 	classEdit->setFixedSize(180, 30);
 	//下
@@ -102,13 +105,13 @@ void RegisterWindow::initView()
 	connect(quitButton, SIGNAL(clicked()), this, SLOT(quitButtonSlot()));
 
 	upFaceButton = new QPushButton();
-	upFaceButton->setText(SQ("上传"));
-	upFaceButton->setFixedSize(70, 30);
+	upFaceButton->setText(SQ("上传本地图片"));
+	upFaceButton->setFixedSize(100, 30);
 	connect(upFaceButton, SIGNAL(clicked()), this, SLOT(upFaceButtonSlot()));
 
 	upBatchFaceButton = new QPushButton();
-	upBatchFaceButton->setText(SQ("批量上传"));
-	upBatchFaceButton->setFixedSize(70, 30);
+	upBatchFaceButton->setText(SQ("批量上传照片"));
+	upBatchFaceButton->setFixedSize(100, 30);
 	connect(upBatchFaceButton, SIGNAL(clicked()), this, SLOT(upBatchFaceButtonSlot()));
 
 	rightTopLayout->addWidget(subShow, 0, 0, 1, 3);
@@ -229,7 +232,7 @@ bool RegisterWindow::checkInformation()
 	{
 		return false;
 	}
-	else if (nameEdit->text().isEmpty() || noEdit->text().isEmpty() || collegeEdit->text().isEmpty() || classEdit->text().isEmpty())
+	else if (nameEdit->text().isEmpty() || noEdit->text().isEmpty() || collegeEdit->currentText().isEmpty() || classEdit->text().isEmpty())
 	{
 		return false;
 	}
@@ -424,7 +427,7 @@ void RegisterWindow::saveMessage(const QString imagePath) {
 	else {
 		infParam.setName(QS(QString(nameEdit->text())));
 		infParam.setNo(QS(QString(noEdit->text())));
-		infParam.setCollege(QS(QString(collegeEdit->text())));
+		infParam.setCollege(QS(QString(collegeEdit->currentText())));
 		infParam.setClass(QS(QString(classEdit->text())));
 		infParam.setPictureRoute(pictureRoute);
 	}

@@ -359,3 +359,22 @@ vector<QString> SqlSplite::getRecordMessage() {
 	}	
 	return result;
 }
+vector<QString> SqlSplite::getFaceInfoNos() {
+	QSqlDatabase db = QSqlDatabase::database("faceDB"); //建立数据库连接												//执行SQL语句
+	bool success;
+	vector<QString>result;
+	QSqlQuery query(db);
+	char * sql = "select CLASS,NAME,NO from faceInfo";
+	success = query.exec(sql);
+	if (!success)
+	{
+		qDebug() << SQ("查询表faceInfo No所有信息失败!");
+	}
+	while (query.next())
+	{
+		QString data = (query.value(0).toString()) + "|" + (query.value(1).toString()) + "|" + (query.value(2).toString());
+		result.push_back(data);
+		//qDebug() << data;
+	}
+	return result;
+}

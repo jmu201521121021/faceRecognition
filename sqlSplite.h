@@ -45,7 +45,7 @@ public:
 	bool insertConTitle(int id);
 	vector<QString> getAllRecord(int recordId);
 	vector<QString> getRecordMessage();
-
+	vector<QString> getFaceInfoNos();
 private:
 	//À©ÈÝ
 	void expand();
