@@ -702,6 +702,13 @@ void MainWindow::checkFunction()
 			if (sim >= simTheta) {
 				hasRe = true;
 				index = findNoIndex(reInfParam.getNo());
+				qDebug() << "index1:" << index;
+				if (index == -1) {
+					this->currentShowFace += 1;
+					index = this->currentShowFace % this->stuNos.size();
+					stuNos[i] = reInfParam.getNo();
+				}
+				qDebug() << "index:"<<index;
 				cv::Mat srcImg = cv::imread(reInfParam.getPictureRoute());
 				switch (index)
 				{

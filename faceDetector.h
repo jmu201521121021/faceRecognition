@@ -36,7 +36,7 @@ private:
 	std::string cfg_file = "../cfg/yolov3-spp-focal_loss-test.cfg";
 	std::string weights_file = "../model/yolov3-spp-focal_loss_12000.weights";
 	float theta = 0.7;
-	int detectType = 1; // 0 mean yolo,1 mean seeta
+	int detectType = 0; // 0 mean yolo,1 mean seeta
 };
 #endif
 

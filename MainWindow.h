@@ -307,6 +307,7 @@ private:
 	int useGpuRecognize = 1;     // 识别是否使用GPU
 	float detectTheta = 0.7;     // 人脸检测分数 
 	std::vector<std::string>stuNos = {"0","0","0","0"};
+	int currentShowFace = -1;
 	int imageSize = 112;
 	int alignType = 0; // 0代表seeta2,1代表dlib
 					   //数据库管理器
