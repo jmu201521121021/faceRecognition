@@ -1,0 +1,2 @@
+ATTACH DATABASE 'faceDB.db' As 'test';
+select f.CLASS,r.NO,a.NAME,STARTTIME,SIGNDATE from faceInfo f, conTitle t, record r,activity a where f.NO = r.NO and r.RECORDID = t.RECORDID and t.RECORDID = 1 and a.ID = t.ID ;
