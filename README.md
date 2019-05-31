@@ -4,7 +4,7 @@ By Jinshan Chen
 
 # **Face Recognition System demo**
 
-![demo](image\demo.png)
+![demo](https://github.com/jmu201521121021/faceRecognition/blob/master/image/demo.png)
 
 # Introduction
 
